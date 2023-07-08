@@ -1,0 +1,401 @@
+\documentclass{beamer}
+
+% Pacotes básicos 
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{csquotes}
+\usepackage{url}
+\usepackage[natbib=true,style=authoryear, backend=biber, useprefix=true]{biblatex}
+\addbibresource{bibliografia.bib}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+
+% \setbeamertemplate{footline}[frame number]
+\addtobeamertemplate{navigation symbols}{}{%
+    \usebeamerfont{footline}%
+    \usebeamercolor[fg]{footline}%
+    \hspace{1em}%
+    \insertframenumber/\inserttotalframenumber
+}
+
+
+
+% Theme
+\usetheme{Madrid} % Choose your preferred theme here
+
+% Title Page
+\title{Quantum state estimation with quantum extreme learning
+machines}
+\author{Luca Innocenti}
+% \logo{\includegraphics[scale=.03]{eqai-2023-logo.jpg}}
+\date{NUMTA 2023}
+
+% Content
+\begin{document}
+
+\begin{frame}
+  \titlepage
+  \hfill\includegraphics[height=1.5cm]{figures/logo-unipa-2020.png}
+\end{frame}
+
+\begin{frame}
+\frametitle{Classical reservoir computing (RC)}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/scheme_RC.jpg}
+\end{figure}
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Classical RC}
+  \framesubtitle{What is a reservoir computer?}
+  
+  \begin{itemize}
+      \item A \textit{reservoir computer} (RC) is a fixed, untrained, nonlinear mapping from inputs to outputs, followed by a linear readout stage, where the training takes place.
+      \item The ``reservoir'' is effectively a dynamical system, driven by input time-dependent signals $t\mapsto \mathbf u(t)$, $t\in\mathbb{Z}$.
+      \item RCs can process time series because the reservoir has internal memory. We can describe its state as a dynamical system
+      % $x_j(t)=T_j(\mathbf x(t-1),\mathbf u(t))$.
+      \begin{equation}
+          \mathbf x(t)=T(\mathbf x(t-1),\mathbf u(t)),
+      \end{equation}
+      with $T$ mapping driving signal $\mathbf u(t)$ and previous state $\mathbf x(t-1)$ to the updated internal state $\mathbf x(t)$.
+      % \item The map $T$ is fixed beforehand. Training is only performed on the output signals, via a linear estimator.
+  \end{itemize}
+\end{frame}
+
+% \begin{frame}
+%   \frametitle{Classical RC}
+%   \framesubtitle{Training and readout}
+
+%   \begin{itemize}
+%       \item The map $T$ is fixed beforehand. Training is only performed on the output signals, via a linear estimator.
+%       \item The read signal at each step $t$ is a linear function of the RC variables:
+%       \begin{equation}
+%           \mathbf y(t) = W\mathbf x(t).
+%       \end{equation}
+%       \item The objective is to reproduce a function 
+%       \begin{equation}
+%           \mathbf z(t)= \mathbf z(\mathbf u^{-h}(t))
+%       \end{equation}
+%       of the last $h$ time steps.
+%   \end{itemize}
+
+
+% \end{frame}
+
+% \begin{frame}
+%   \frametitle{Classical RC}
+%   \framesubtitle{Training and readout}
+
+%   \begin{itemize}
+%       \item To optimise we use the loss function:
+%       \begin{equation}
+%           \operatorname{MSE}_T[\mathbf z] = \frac{1}{T}\sum_{t=1}^T \|\mathbf y(t)-\mathbf z(t)\|^2,
+%       \end{equation}
+%       where $T$ is the size of the training dataset used to estimate the MSE.
+%       \item Some precise statements about the universality of RCs can be made studying their \textit{information processing capacity}:
+%       Dambre, Joni, et al. "Information processing capacity of dynamical systems." Scientific reports 2.1 (2012): 1-7.
+%   \end{itemize}
+  
+% \end{frame}
+
+
+\begin{frame}
+\frametitle{Classical ELMs}
+\framesubtitle{\textit{Reservoir computing} vs \textit{extreme learning machines}}
+\begin{itemize}
+    \item When there is no memory, we talk of \textit{extreme learning machines} (ELMs). Here we have a \textit{fixed} nonlinear function applied to the input, and a trained linear readout.
+    \item More precisely, given a training dataset $\{(\mathbf x_i^{\rm tr},\mathbf y_i^{\rm tr})\}$, and a ``reservoir function'' $f$, we look for $W$ such that
+    $% \begin{equation}
+        W f(\mathbf x_i^{\rm tr}) \simeq \mathbf y_i^{\rm tr}
+    $. % \end{equation}
+    \textit{I.e.}, solve the optimisation problem
+    \begin{equation}
+        \operatorname*{argmin}_W \sum_i \mathcal L(W f(\mathbf x_i^{\rm tr}), \mathbf y_i^{\rm tr}).
+    \end{equation}
+    \item ELMs are an extremely simple approach, but training a simple linear readout can sometimes go surprisingly far.
+\end{itemize}
+\end{frame}
+
+
+% \begin{frame}
+% % \frametitle{Classical RC}
+% \frametitle{Linear regression}
+
+% \begin{itemize}
+%     \item The standard choice of loss function is the $L_2$ distance. So we want to minimise $\sum_i \|W \mathbf x_i^{\rm tr}-\mathbf y_i^{\rm tr}\|_2^2$. Or equivalently, minimise $\|WX^{\rm tr}-Y^{\rm tr}\|_2$, defining $X^{\rm tr}\equiv \sum_i \mathbf x_i^{\rm tr} \mathbf e_i^\dagger$ and $Y^{\rm tr}\equiv \sum_i \mathbf y_i^{\rm tr} \mathbf e_i^\dagger$.
+%     \item This is (relatively) easy to do. We can characterise the solutions via the \textit{pseudoinverse}: $W = Y^{\rm tr} (X^{\rm tr})^+$. Computing $(X^{\rm tr})^+$ involves reciprocals of singular values of $X^{\rm tr}$, so this can be an ill-conditioned problem, and regularisation techniques become necessary.
+%     \item This works both for ELMs and RCs, changing what $\mathbf x_i^{\rm tr}$ represents.
+% \end{itemize}
+
+% \end{frame}
+
+
+
+% \begin{frame}
+%   \frametitle{Some references on ELMs and RCs}
+%   \begin{itemize}\small
+%       \item Wang, J., Lu, S., Wang, S. H., \& Zhang, Y. D. (2022). A review on extreme learning machine. Multimedia Tools and Applications, 81, 41611-41660.
+%       \item Dambre, J., Verstraeten, D., Schrauwen, B., \& Massar, S. (2012). Information processing capacity of dynamical systems. Scientific Reports, 2(1), 514.
+%       \item Cucchi, M., Abreu, S., Ciccone, G., Brunner, D., \& Kleemann, H. (2022). Hands-on reservoir computing: a tutorial for practical implementation. Neuromorphic Computing and Engineering, 2(3). DOI 10.1088/2634-4386/ac7db7
+%   \end{itemize}
+% \end{frame}
+
+
+
+\begin{frame}
+\frametitle{From classical to quantum ELMs}
+% \framesubtitle{General description}
+
+\begin{figure}
+\includegraphics[width=0.9\linewidth]{figures/ELMs to QELMs.png}
+\end{figure}
+
+\begin{itemize}
+    \item Replace inputs with quantum states, the nonlinear function with some quantum dynamic, and the readout stage with a linear estimator applied to measurement outcomes.
+    \item We can always model such a device as some channel $\Phi$ applied to input states $\rho$, and a measurement $\boldsymbol\mu$ performed at the end, resulting in probabilities:
+    \begin{equation}
+        p_b(\rho) = \operatorname{tr}(\mu_b \Phi(\rho)).
+    \end{equation}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{QELMs, more explicitly}
+
+The general pipeline is:\vspace{10pt}
+\begin{itemize}
+    \item Use a previously characterised training dataset $\{(\rho_k^{\rm tr},\langle\mathcal O\rangle_{\rho_k^{\rm tr}}\rangle)\}_{k=1}^{N_{\rm tr}}$ of states and outcomes to obtain an estimate of the effective POVM, and the estimator to extract information from measurement probabilities.
+    \vspace{10pt}
+    \item To estimate some property of a given $\rho$, you
+    \begin{enumerate}
+        \item evolve and measure it $N$ times, collecting outcomes $b_1,...,b_N$
+        \item estimate the outcome probabilities $p_b$ via the frequencies 
+        \item perform linear regression on the frequencies to recover the target information
+    \end{enumerate}
+\end{itemize}
+    
+\end{frame}
+
+\begin{frame}
+\frametitle{Information processing in QELMs/QRCs}
+% \framesubtitle{Types of information processing}
+We can process classical or quantum information, depending on the problem setting:
+% \begin{itemize}
+%     \item 
+% \end{itemize}
+\begin{figure}
+\includegraphics[width=0.7\linewidth]{figures/QRCs processing info.png}
+\end{figure}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pros of QELMs for state estimation}
+
+\begin{itemize}
+    \item Uncharacterised physical evolutions can be exploited for state estimation and other metrological tasks.
+    \item The specific details of the evolution don't matter too much. As long as no specific symmetries are present, one can tomographically reconstruct input states from outputs.
+    \item Many physical systems can be used as a ``reservoir''. The only requirement is an evolution sending inputs to output states in a sufficiently larger Hilbert space (we don't really need a ``reservoir'' to do QRC).
+    \item You can explicitly characterise which training targets are achievable and which are not.
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Achievable targets with QELMs for state estimation}
+
+\begin{itemize}
+    \item Linearity of quantum channels and measurements allow an easy characterisation of achievable target functions: applying a linear functional $W$ to measurement probabilities gives
+    \begin{equation}
+        \sum_j W_j p_j = \sum_j W_j \operatorname{tr}(\mu_j \Phi(\rho)).
+    \end{equation}
+    Defining an ``effective measurement'' $\tilde\mu_j\equiv \Phi^\dagger(\mu_j)$, the set of all achievable observables is easily characterised as
+    \begin{equation}
+        \operatorname{span}_{\mathbb{R}}(\{\tilde\mu_j\}).
+    \end{equation}
+    \item For example, can you use a QELM to estimate the concurrence of input states? No, because that doesn't correspond to measuring an observable.
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Training QELMs vs measurement reconstruction}
+
+\begin{itemize}
+    \item We can show that the process of training a QELM is equivalent to a form of (limited) measurement tomography:
+    the training problem
+    \begin{equation}
+        \sum_b w_b\operatorname{tr}(\mu_b\rho_i^{\rm tr}) = \operatorname{tr}(\mathcal O\rho_i^{\rm tr}), \quad\forall i,
+    \end{equation}
+    has solution
+    \begin{equation}
+        \mathbf w = \operatorname{tr}(\mathcal O \boldsymbol\mu^\star).
+    \end{equation}
+    In words, the training produces a representation of the \textit{dual} of the effective measurement, projected on the target observables.
+\end{itemize}
+    
+\end{frame}
+
+
+\begin{frame}
+\frametitle{QELMs, single-shot regime}
+
+\begin{itemize}
+    \item These conceptual simplifications allow to easily switch to a ``single-shot'' perspective: look for the best estimators operating on individual measurement outcomes.
+    \item Via a generalised shadow tomography \textit{frame}work, we find the optimal unbiased estimator to recover $\mathcal O$:
+    \begin{equation}
+        \hat o(b) = \operatorname{tr}(\mathcal O \hat\rho(b)),
+        \quad
+        \hat\rho(b)\equiv  \left(\sum_b \frac{|\mu_b\rangle\!\rangle\!\langle\!\langle \mu_b|}{\operatorname{tr}(\mu_b)} \right)^{-1}
+        \frac{\mu_b}{\operatorname{tr}(\mu_b)}
+    \end{equation}
+    \item We show that the standard QELM training produces the estimator:
+    \begin{equation}
+        \hat o'(b) = \operatorname{tr}(\mathcal O\hat\rho'(b)),
+        \quad \hat\rho'(b) \equiv
+        \left(\sum_b|\mu_b\rangle\!\rangle\!\langle\!\langle\mu_b|\right)^{-1}\mu_b
+    \end{equation}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{QELM, error estimates}
+    \begin{itemize}
+        \item Using these estimators we can work out the associated variances, and thus estimate the statistics necessary to recover information within a given accuracy:
+        \begin{equation}
+            \operatorname{Var}[\hat o] =
+            \sum_b\operatorname{tr}(\mu_b \rho) \operatorname{tr}(\mathcal O\hat\rho(b))^2 - \operatorname{tr}(\mu_b \rho)^2.
+        \end{equation}
+        \item When the effective measurement is sufficiently symmetric (gives a 2-design) the average variance has the optimal scaling:
+        \begin{equation}
+            \overline{\operatorname{Var}[\hat o]} =
+            Vd \left(\frac{d^2+d-2}{d^2-1}\right),
+            \quad
+            V\equiv \langle\mathcal O^2\rangle_{I/d}-\langle\mathcal O\rangle_{I/d}^2.
+        \end{equation}
+        \item $M$ observables can be estimated within additive error $\epsilon$ with probability $1-\delta$ with statistics $N\sim \frac{\log(M)}{\epsilon^2}\log(2/\delta)$.
+    \end{itemize}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{QRC: reconstruction error for different topologies}
+
+\begin{figure}
+\includegraphics[width=0.6\linewidth]{figures/figure04.pdf}
+\end{figure}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{QRCs: general scheme}
+% \framesubtitle{General description}
+\begin{itemize}
+    \item If there's memory, we have a sequence of inputs, $\rho_t, t\in\mathbb{Z}$, some internal state of the reservoir $\eta_t$, and a channel $\Phi$ acting on both. A single step then reads:
+    \begin{equation}
+        \eta_{t+1} = \Phi(\rho_t\otimes\eta_t).
+    \end{equation}
+    Two steps correspond to:
+    \begin{equation}
+        \eta_{t+2} = \Phi(\rho_{t+1}\otimes\Phi(\rho_t\otimes\eta_t))
+        \equiv \Phi^{(2)}(\rho_{t+1}\otimes\rho_t\otimes\eta_t),
+    \end{equation}
+    
+    % \pause
+    \item \textit{This assumes no measurement in between!}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{QRC: general scheme}
+
+\begin{figure}
+\includegraphics[width=\linewidth]{figures/scheme_QRC.png}
+\end{figure}
+
+\end{frame}
+
+
+
+% \begin{frame}
+% \frametitle{What happens \textit{quantising} QELMs/QRCs?}
+% % \framesubtitle{Classical vs quantum}
+% Quantizing the classical scheme changes things significantly:
+% \begin{itemize}
+%     \item It stops being obvious what exactly is being ``processed'' (classical or quantum info?).
+%     \item We now have to deal with quantum states, only accessible through measurements. Measurements unavoidably perturb the system, so what does ``processing temporal sequences'' mean in this context?
+%     \item There are intrinsic constraints of what the evolution of a quantum system can look like.
+% \end{itemize}
+% \end{frame}
+
+
+
+
+
+% \begin{frame}
+% \frametitle{QELMs for classical processing}
+
+% \begin{itemize}
+%     \item If the goal is processing classical information, paying attention at how the information is encoded into the input states is paramount, as it will determine the kind of features we can hope to extract.
+%     \item Nonlinearity is possible here, as long as the encoding $s\mapsto \rho_s$ is nonlinear (as it usually is).
+% \end{itemize}
+
+% \end{frame}
+
+
+
+\begin{frame}
+\frametitle{What can you do with QRCs?}
+
+\begin{itemize}
+    \item This framework still applies to the time-dependent case. Although now the inputs are sequences of states, $\rho_1\otimes\cdots\otimes\rho_k$, evolving through some effective channel $\tilde\Phi$. Measurement is still only performed at the end though.
+    \item One can also consider QELMs, using multiple copies of the same state as input, thus allowing reconstruction of nonlinear functionals.
+    \item The memory capacity of the channel $\Phi$ will determine how nonlinear the targets can be.
+    \item There are known advantages in performing global measurements over multiple copies of a state (\textit{e.g.} \href{https://www.science.org/doi/10.1126/science.abn7293}{\textit{Huang et al. "Quantum advantage in learning from experiments." Science (2022)}}).
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Conclusion}
+  \begin{itemize}
+      \item QELMs are easy to train, setup, and implement. The simplicity of the model allows a good understanding of what it can do, from the state estimation perspective.
+      \item They are good examples to illustrate general phenomena arising quantising a classical model (\textit{e.g.} measurement feedback, intrinsic linearity of quantum embeddings, stochastic outcomes).
+      \item Good understanding of which types of dynamics result in cheap estimation of input properties.
+      \item Future outlooks include gain a similar understanding of the optimal way to retrieve information nonlinearly encoded into input states; devise similar ``one-shot perspectives'' to time-series reservoir processing; characterise the relations between quantum information scrambling and the efficiency of QELMs.
+      \item Main references: \href{https://arxiv.org/abs/2210.00780}{arXiv:2210.00780}, \href{https://arxiv.org/abs/2301.13229}{arXiv:2301.13229}.
+  \end{itemize}
+\end{frame}
+
+\end{document}
